@@ -7,8 +7,7 @@
 <title>YouTube Ratings Config</title>
 </head>
 <body>
-<label id="intervalInputConfig_label" for="intervalInputConfig">Refresh Rate:</label>
-<input id="intervalInputConfig" type="text"/>
+<div id="settingsTitle"><span>YouTube Ratings Settings</span></div>
 <br>
 
 <label id="disableAuto_label" for="disableAuto">Disable auto-ratings:</label>
@@ -24,13 +23,15 @@
 <div id="colorRulesWrapper">
 	<div id="colorRulesDescriptor">Custom style rules:</div>
 	<textarea id="colorContent" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" disabled></textarea>
-	<div id="parseErrors"></div>
 </div>
 
-<a id="helpLink" href="https://github.com/KeinR/YouTube_Ratings_Preview/wiki" target="_blank">Help</a>
+<div id="parseErrors"></div>
+
+<a id="helpLink" href="https://github.com/KeinR/YouTube_Ratings_Preview/wiki/customization" target="_blank">Help</a>
 <a id="reset" href="javaScript:void(0)">Reset to default</a>
 
 <button id="submitChanges">Save Changes</button>
+
 </body>
 </html>
 
