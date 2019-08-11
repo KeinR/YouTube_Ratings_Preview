@@ -11,9 +11,12 @@ let port = chrome.extension.connect({ name: Math.random()+'' })
 ,activeRequest = false
 ,backlog = []
 ,main
-,main_interval = 500
+,main_interval
 ,set = ''
-,execution_paused = false;
+,execution_paused = false
+,styling
+,default_styling
+,auto_ratings
 ;
 function isElementInViewport(el) { // Function courtesy of Stack Overflow
 
@@ -84,6 +87,21 @@ function runData(){
 
 function resetIdleTimer() { timeLastMovement = 0; }
 
+function parsePass(value, percent) {
+	console.warn(value);
+	if (value[0].indexOf('=') !== -1) {
+		if (
+		(value[0][0] === '>' && percent >= value[1]) || 
+		(value[0][0] !== '>' && percent >= value[1])
+		) { return true; }
+	} else if (value[1] !== '$') {
+		if (
+		(value[0] === '>' && percent > value[1]) || 
+		(value[0] === '<' && percent < value[1])
+		) { return true; }
+	}
+	return false;
+}
 
 port.onMessage.addListener(function(msg) {
 	//console.log(msg);
@@ -99,27 +117,57 @@ port.onMessage.addListener(function(msg) {
 			let dislikes = parseInt(msg.items[i].statistics.dislikeCount);
 			let percent = Math.round(likes/(likes+dislikes)*1000)/10;
 			
-			let color = 'pink';
-			if (percent > 95) {
-				color = 'green';
-			} else if (percent > 90) {
-				color = 'lightgreen';
-			} else if (percent > 80) {
-				color = 'yellow';
-			} else if (percent >= 60) {
-				color = 'red';
-			} else if (percent < 60) {
-				color = 'darkred';
+			let color = 'gray';
+			let extraStyle = '';
+			
+			if (default_styling) {
+				console.log('%cDEF', 'color:red')
+				if (percent > 95) {
+					color = 'green';
+				} else if (percent > 90) {
+					color = 'lightgreen';
+				} else if (percent > 80) {
+					color = 'yellow';
+				} else if (percent > 60) {
+					color = 'red';
+				} else if (percent >= 0) {
+					color = 'darkred';
+				}
+				
+				if (percent >= 99) {
+					extraStyle += 'border: yellow 1px solid';
+				}
+			} else {
+				console.log('%cwed', 'color:pink');
+				for (let i = 0; i < styling.length; i++) {
+					if (styling[i][1] === '$') { continue; }
+					if (parsePass(styling[i], percent)) {
+						if (styling[i][2][0] !== '&') {
+							color = styling[i][2];
+						} else {
+							extraStyle = styling[i][2].substring(1);
+						}
+					}
+				}
 			}
 			
-			let extraStyle = '';
-			if (percent >= 99) {
-				extraStyle += 'border: yellow 1px solid';
-			}
 			
 			returns[msg.items[i].id].append('<span class="kein_data_rating"> • <span style="color: '+color+';background-color: #353535;border-radius: 2px;padding: 0 1px;'+extraStyle+'">'+percent+'%</span></span>');
 		} else {
-			returns[msg.items[i].id].append('<span class="kein_data_rating"> • <span style="color: lightblue;background-color: #353535;border-radius: 2px;padding: 0 1px;">N/A%</span></span>');
+			let color = 'lightblue'
+			let extraStyle = '';
+			if (!default_styling) {
+				for (let i = 0; i < styling.length; i++) {
+					if (styling[i][0] === '$') {
+						if (styling[i][2][0] === '&') {
+							extraStyle = styling[i][2].substring(1);
+						} else {
+							color = styling[i][2];
+						}
+					}
+				}
+			}
+			returns[msg.items[i].id].append('<span class="kein_data_rating"> • <span style="color: '+color+';background-color: #353535;border-radius: 2px;padding: 0 1px;'+extraStyle+'">N/A%</span></span>');
 		}
 		console.log('%cSetting flag', 'color:green');
 		returns[msg.items[i].id].parent().parent().parent().parent().parent().parent().addClass('yt_ratings_used');
@@ -134,9 +182,23 @@ window.onscroll = resetIdleTimer;
 
 $(function(){
 	chrome.storage.local.get(function(storage) {
-		if (storage.main_interval !== undefined) {
-			main_interval = parseInt(storage.main_interval);
-		}
+		
+		main_interval = storage.main_interval!==undefined?parseInt(storage.main_interval):500;
+		
+		default_styling = storage.default_styling!==undefined?storage.default_styling:true;
+		
+		auto_ratings = storage.auto_ratings!==undefined?storage.default_styling:true;
+		
+		styling = storage.styling!==undefined?storage.styling:[
+			['>=', 0, 'darkred'], 
+			['>', 60, 'red'], 
+			['>', 80, 'yellow'], 
+			['>', 90, 'lightgreen'], 
+			['>', 95, 'green'], 
+			['>=', 99, '&border: yellow 1px solid;'], 
+			[undefined, '$', 'lightblue']
+		];
+		console.log(styling);
 		if (storage.autoGrabbing === undefined || storage.autoGrabbing === 'true') {
 			console.log(main_interval);
 
