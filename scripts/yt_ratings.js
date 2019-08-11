@@ -7,16 +7,14 @@ let port = chrome.extension.connect({ name: Math.random()+'' })
 ,v3 = /&/
 ,v4 = /,/
 ,returns = {}
-,timeLastMovement = 0
 ,activeRequest = false
 ,backlog = []
-,main
-,main_interval
 ,set = ''
 ,execution_paused = false
 ,styling
 ,default_styling
 ,auto_ratings
+,run = true
 ;
 function isElementInViewport(el) { // Function courtesy of Stack Overflow
 
@@ -39,9 +37,9 @@ function data() {
 	$('div[id=\'dismissable\']:not(.yt_ratings_used,.ytd-shelf-renderer)').each(function(){ // Iterate over all video sections that do not have values and are not dividers
 		console.log('case');
 		let paren = $(this); // Cache parent
+		paren.addClass('yt_ratings_used');
 		$(this).find('a#thumbnail').each(function(){ // Get thumbnail
 			if ($(this).attr('href').indexOf('&start_radio=') !== -1) { // If it's a playlist, mark it and skip
-				paren.addClass('yt_ratings_used');
 				return false;
 			}
 			let preParen = $(this); // Cache thumbnail
@@ -59,9 +57,13 @@ function data() {
 						backlog.push(set);
 						set = '';
 					}
-					set += send;
-											
-					returns[v4.test(send)?send.substring(1):send] = insert;
+					//console.warn(v4.test(send)?send.substring(1):send);
+					//console.warn(returns[v4.test(send)?send.substring(1):send]);
+					//console.warn(insert);
+					if (returns[v4.test(send)?send.substring(1):send] === undefined) {
+						set += send;
+						returns[v4.test(send)?send.substring(1):send] = insert;
+					}
 				}
 			}
 		});
@@ -71,21 +73,6 @@ function data() {
 		set = '';
 	}
 }
-
-function runData(){
-	if (++timeLastMovement < 5) {
-				
-		data();
-		
-	} else if (activeRequest) {
-		console.log('Request blocked; pending...');
-	} else {
-		console.log('idle...');
-	}
-}
-
-
-function resetIdleTimer() { timeLastMovement = 0; }
 
 function parsePass(value, percent) {
 	console.warn(value);
@@ -177,14 +164,9 @@ port.onMessage.addListener(function(msg) {
 	activeRequest = false;
 });
 
-window.onmousemove = resetIdleTimer;
-window.onscroll = resetIdleTimer;
-
 $(function(){
 	chrome.storage.local.get(function(storage) {
-		
-		main_interval = storage.main_interval!==undefined?parseInt(storage.main_interval):500;
-		
+				
 		default_styling = storage.default_styling!==undefined?storage.default_styling:true;
 		
 		auto_ratings = storage.auto_ratings!==undefined?storage.default_styling:true;
@@ -200,17 +182,12 @@ $(function(){
 		];
 		console.log(styling);
 		if (storage.autoGrabbing === undefined || storage.autoGrabbing === 'true') {
-			console.log(main_interval);
-
-			main = setInterval(runData, main_interval);
-
+			
 			setInterval(function(){
 				if (query !== window.location.href) {
-					execution_paused = true;
 					backlog = [];
 					returns = {};
 					set = '';
-					clearInterval(main);
 					console.log('Execution paused.');
 					query = window.location.href;
 					console.log("::::RESET::::\n"+query);
@@ -227,8 +204,6 @@ $(function(){
 							$(this).removeClass('yt_ratings_used');
 						});
 						console.log('Execution resuming...');
-						main = setInterval(runData, main_interval);
-						execution_paused = false;
 					});
 				} else if (backlog.length > 0 && !activeRequest && !execution_paused) {
 					console.log('Fetching:\n'+backlog[0]);
@@ -239,6 +214,11 @@ $(function(){
 			}, 100);
 		}
 	});
+	new MutationObserver(function(mutationsList){
+		console.warn(mutationsList);
+		console.log('%cRUN', 'color:blue;');
+		data();
+	}).observe($('body')[0], {attributes: false, childList: true, subtree: true});
 });
 
 

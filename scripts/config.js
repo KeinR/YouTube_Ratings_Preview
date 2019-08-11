@@ -1,6 +1,3 @@
-let main_interval
-;
-
 function parseCusomStyle(val) {
     let raw = val
         ,product = []
@@ -25,8 +22,8 @@ function parseCusomStyle(val) {
                 if (!safe) {
                     section[2] = selection;
                     selection = '';
-					if (((section[0] !== '<' && section[0] !== '>' && section[0] !== '<=' && section[0] !== '>=') || parseInt(section[1]) === NaN) && section[1] !== '$') {
-						return '@Parsing failed! Error at chars '+debugChar+' - '+(i+1);
+					if (((section[0] !== '<' && section[0] !== '>' && section[0] !== '<=' && section[0] !== '>=') || Number.isNaN(section[1])) && section[1] !== '$') {
+						return '@Parsing failed! Error at chars '+debugChar+' - '+(i+1)+' (statement '+(product.length+1)+')';
 					}
 					debugChar = i+1;
                     product.push(section);
@@ -66,13 +63,6 @@ $(function(){
 	;
 	chrome.storage.local.get(function(storage) {
 		
-		console.log(typeof storage.main_interval === 'number');
-		main_interval = storage.main_interval!==undefined&&typeof storage.main_interval==="number"?storage.main_interval:function(){
-			console.log('check\'d');
-			chrome.storage.local.set({main_interval: 500});
-			return 500;
-		};
-		
 		if (storage.default_styling === false) {
 			eStyles.checked = true;
 			colorContent.removeAttr('disabled');
@@ -88,7 +78,6 @@ $(function(){
 		
 		console.error(storage);
 		
-		$('input#intervalInputConfig').val(main_interval);
 		
 		eStyles.addEventListener('input', function(e){
 			console.log('Event call fired');
@@ -109,7 +98,6 @@ $(function(){
 		});
 		
 		$('button#submitChanges').click(function(){
-			chrome.storage.local.set({main_interval: parseInt($('input#intervalInputConfig').val())});
 			chrome.storage.local.set({default_styling: !eStyles.checked});
 			chrome.storage.local.set({auto_ratings: !aRatings.checked});
 			
@@ -119,7 +107,7 @@ $(function(){
 			} else {
 				chrome.storage.local.set({styling_raw: colorContent.val()});
 				chrome.storage.local.set({styling: compiled});
-				$('#parseErrors').attr('style', 'color:lightgreen;').html('Parse successful');
+				$('#parseErrors').attr('style', 'color:green;').html('Success. Refresh the page to apply changes.');
 			}
 		});
 		$('#reset').click(function(){
