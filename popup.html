@@ -7,36 +7,45 @@
 <title>YouTube Ratings Config</title>
 </head>
 <body>
-<label id="intervalInputConfig_label" for="intervalInputConfig">Refresh Rate
-	<span id="intervalInputConfig_tooltip" class="toolTip">
-	Refresh rate in milliseconds. A faster refresh rate means ratings load faster, but it will be harder on performance.
-	</span>
-</label><br>
-<input id="intervalInputConfig" type="text"/><br>
+<label id="intervalInputConfig_label" for="intervalInputConfig">Refresh Rate:</label>
+<input id="intervalInputConfig" type="text"/>
+<br>
 
-
-
-<!--
-<input id="intervalInputConfig" type="text"/><br>
-<input id="intervalInputConfig" type="text"/><br>
-<input id="intervalInputConfig" type="text"/><br>
-<input id="intervalInputConfig" type="text"/><br>
-<!--
-<label for="intervalInputConfig">Refresh Rate</label><br>
-<input id="intervalInputConfig" type="text"/><br>
-
-<label for="intervalInputConfig">Refresh Rate</label><br>
-<input id="intervalInputConfig" type="text"/><br>
--->
-<label id="disableAuto_label" for="disableAuto">Disable auto-grabbing of ratings<br>
-	<span id="disableAuto_tooltip" class="toolTip">
-	If you perfer manually right clicking and selecting the tooltip to load the rating, select this to disable the auto-grabbing of ratings. This will have a positive affect on performance.
-	</span>
-</label>
+<label id="disableAuto_label" for="disableAuto">Disable auto-ratings:</label>
 <input id="disableAuto" type="checkbox"/>
 <br>
 
+<label id="enableStyles_label" for="enableStyles">Enable custom styles:</label>
+<input id="enableStyles" type="checkbox"/>
+<br>
+
+
+
+<div id="colorRulesWrapper">
+	<div id="colorRulesDescriptor">Custom style rules:</div>
+	<textarea id="colorContent" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" disabled></textarea>
+	<div id="parseErrors"></div>
+</div>
+
+<a id="helpLink" href="https://github.com/KeinR/YouTube_Ratings_Preview/wiki" target="_blank">Help</a>
+<a id="reset" href="javaScript:void(0)">Reset to default</a>
 
 <button id="submitChanges">Save Changes</button>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
