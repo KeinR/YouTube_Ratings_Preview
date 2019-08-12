@@ -3,11 +3,7 @@ chrome.runtime.onInstalled.addListener(function() {
 		chrome.declarativeContent.onPageChanged.addRules([{
 			conditions: [new chrome.declarativeContent.PageStateMatcher({
 				pageUrl: {hostEquals: 'www.youtube.com', schemes: ['https'] },
-			})
-			, new chrome.declarativeContent.PageStateMatcher({
-				pageUrl: {hostEquals: 'github.com', schemes: ['https'] },
-			})
-			],
+			})],
 				actions: [new chrome.declarativeContent.ShowPageAction()]
 		}]);
 	});
@@ -22,8 +18,8 @@ chrome.contextMenus.create({
 chrome.contextMenus.onClicked.addListener(function(info, tab){
 	//console.warn(info);
 	//console.warn(tab);
-	chrome.storage.local.clear()
-	/*
+	//chrome.storage.local.clear()
+	
 	console.warn(info.linkUrl.substring(info.linkUrl.indexOf('=')+1));
 	$.ajax({
 		type: 'GET',
@@ -38,7 +34,6 @@ chrome.contextMenus.onClicked.addListener(function(info, tab){
 			alert(percent+"%");
 		}
 	});
-	*/
 });
 
 chrome.extension.onConnect.addListener(function(port) {
