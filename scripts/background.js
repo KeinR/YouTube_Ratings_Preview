@@ -1,3 +1,7 @@
+const API_KEY = "AIzaSyDHpPnfZiJzPJGIFnaluk3W7ZayDqZ5Vsg";
+
+
+
 chrome.runtime.onInstalled.addListener(function() {
 	chrome.declarativeContent.onPageChanged.removeRules(undefined, function() {
 		chrome.declarativeContent.onPageChanged.addRules([{
@@ -12,20 +16,20 @@ chrome.runtime.onInstalled.addListener(function() {
 chrome.contextMenus.create({
 	id: "RatingsYT",
 	title: "Manually Get rating",
-	contexts: ["link"], /* link */
+	contexts: ["link"],
 });
 
 chrome.contextMenus.onClicked.addListener(function(info, tab){
 	//console.warn(info);
 	//console.warn(tab);
 	//chrome.storage.local.clear()
-	
-	console.warn(info.linkUrl.substring(info.linkUrl.indexOf('=')+1));
+
+	//console.warn(info.linkUrl.substring(info.linkUrl.indexOf('=')+1));
 	$.ajax({
 		type: 'GET',
 		async: true,
 		url: 'https://www.googleapis.com/youtube/v3/videos',
-		data: ({id: info.linkUrl.substring(info.linkUrl.indexOf('=')+1), key: 'AIzaSyDHpPnfZiJzPJGIFnaluk3W7ZayDqZ5Vsg', part: 'statistics'}),
+		data: ({id: info.linkUrl.substring(info.linkUrl.indexOf('=')+1), key: API_KEY, part: 'statistics'}),
 		success: function(response) {
 			console.log(response);
 			let likes = parseInt(response.items[0].statistics.likeCount);
@@ -44,7 +48,7 @@ chrome.extension.onConnect.addListener(function(port) {
 			type: 'GET',
 			async: true,
 			url: 'https://www.googleapis.com/youtube/v3/videos',
-			data: ({id: msg, key: 'AIzaSyDHpPnfZiJzPJGIFnaluk3W7ZayDqZ5Vsg', part: 'statistics'}),
+			data: ({id: msg, key: API_KEY, part: 'statistics'}),
 			success: function(response) {
 				console.log(response);
 				port.postMessage(response);
@@ -63,16 +67,3 @@ chrome.storage.local.set({test: true}, function(result) {
 chrome.storage.local.get(function(storage){
 	console.warn(storage);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-

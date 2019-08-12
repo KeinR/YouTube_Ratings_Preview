@@ -1,5 +1,4 @@
 let port = chrome.extension.connect({ name: Math.random()+'' })
-,query = window.location.href
 ,v1 = /views/
 ,v1_1 = /watching/
 ,v1_2 = /Recommended/
@@ -7,19 +6,16 @@ let port = chrome.extension.connect({ name: Math.random()+'' })
 ,v3 = /&/
 ,v4 = /,/
 ,returns = {}
-,activeRequest = false
 ,backlog = []
 ,set = ''
-,execution_paused = false
 ,styling
 ,default_styling
 ,auto_ratings
-,url_observer_observed = []
 ,url_observer_config = {childList: false, characterData: false, attributes: true, subtree: false}
 ;
 function isElementInViewport(el) { // Function courtesy of Stack Overflow
 
-    //special bonus for those using jQuery
+    // For jQuery
     if (typeof jQuery === "function" && el instanceof jQuery) {
         el = el[0];
     }
@@ -34,34 +30,42 @@ function isElementInViewport(el) { // Function courtesy of Stack Overflow
     );
 }
 
-function dataSoloLink(subject) {
+
+
+// YouTube loads its pages dynamically, so a listener has to be placed on all elements that are allready loaded and a special function called that will refresh their value
+function dataSoloLink(subject) { // This functon serves that purpose.
 	let paren = subject.parent().parent(); // Cache parent
-	paren.addClass('yt_ratings_used');
+	paren.addClass('yt_ratings_used'); // Ensure that the mutation observer doesn't iterate over it
 	let insert = paren.find('div#metadata-line').find(">:first-child"); // Cache metadata section
-	insert.find('.kein_data_rating').each(function(){
+	insert.find('.YT_ratings_data_rating').each(function(){ // Remove old rating
 		$(this).remove();
 	});
 	if (!v2.test(insert.html())) { // Just in case, test if there's already ratings data in metadata section
-		
+
 		let send = (set.length>0&&(set.match(/,/g)||[]).length+1<50?',':'') + subject.attr('href').substring(9); // Determine comma
-		
-		if (set.substring(set.lastIndexOf(',')+1) !== (v4.test(send)?send.substring(1):send)) {
+
+		if (set.indexOf(v4.test(send)?send.substring(1):send) === -1) { // Ensure that this isn't a duplicate
 			if (v3.test(send)) {
+                /* Some videos, if you've watched some of it allready, will have a &t=55s or something of the like appended to the end of a video url.
+                This detects and removes that, as the YT API doesn't like those */
 				send = send.substring(0, send.indexOf('&'));
 			}
-			
+
 			if ((set.match(/,/g) || []).length + 1 >= 50) {
+                /* Couting by the number of commas and therefore video IDs, determine if the number is at or over 50.
+                This is important because the YouTube API won't allow single requests with more than 50 video IDs. */
 				backlog.push(set);
 				set = '';
 			}
 
 			if (returns[v4.test(send)?send.substring(1):send] === undefined) {
+                /* Finally, check that a key for the current video ID doens't exist, ensuring that there isn't an active request for the rating in progress */
 				set += send;
 				returns[v4.test(send)?send.substring(1):send] = insert;
 			}
 		}
 	}
-	if (set.length > 0) {
+	if (set.length > 0) { // Push what's in "set" to the backlog so that it can be processed
 		backlog.push(set);
 		set = '';
 	}
@@ -72,17 +76,15 @@ function data() {
 	$('div[id=\'dismissable\']:not(.yt_ratings_used,.ytd-shelf-renderer)').each(function(){ // Iterate over all video sections that do not have values and are not dividers
 		console.log('case');
 		let paren = $(this); // Cache parent
-		paren.addClass('yt_ratings_used');
+		paren.addClass('yt_ratings_used'); // Ensure that the mutation observer doesn't iterate over it
 		$(this).find('a#thumbnail').each(function(){ // Get thumbnail
-			if ($(this).attr('href').indexOf('&start_radio=') !== -1) { // If it's a playlist, mark it and skip
+			if ($(this).attr('href').indexOf('&start_radio=') !== -1) { // If it's a playlist, skip it
 				return false;
 			}
-			
+
 			let preParen = $(this); // Cache thumbnail
-			
-			url_observer_observed[url_observer_observed.length] = $(this);
-			
-			new MutationObserver(function(mutations){
+
+			new MutationObserver(function(mutations){ // Integral to half of the extension's function, this observes elements for url changes
 				for (let i = 0; i < mutations.length; i++) {
 					let target = $(mutations[i].target);
 					if (target.attr('id') === 'thumbnail') {
@@ -90,24 +92,22 @@ function data() {
 					}
 				}
 			}).observe(this, url_observer_config);
-			
+
 			let insert = paren.find('div#metadata-line').find(">:first-child"); // Cache metadata section
 			if (!v2.test(insert.html())) { // Just in case, test if there's already ratings data in metadata section
-								
+
 				let send = (set.length>0&&(set.match(/,/g)||[]).length+1<50?',':'') + preParen.attr('href').substring(9); // Determine comma
-				
-				if (set.substring(set.lastIndexOf(',')+1) !== (v4.test(send)?send.substring(1):send)) {
+
+                if (set.indexOf(v4.test(send)?send.substring(1):send) === -1) {
 					if (v3.test(send)) {
 						send = send.substring(0, send.indexOf('&'));
 					}
-					
+
 					if ((set.match(/,/g) || []).length + 1 >= 50) {
 						backlog.push(set);
 						set = '';
 					}
-					//console.warn(v4.test(send)?send.substring(1):send);
-					//console.warn(returns[v4.test(send)?send.substring(1):send]);
-					//console.warn(insert);
+
 					if (returns[v4.test(send)?send.substring(1):send] === undefined) {
 						set += send;
 						returns[v4.test(send)?send.substring(1):send] = insert;
@@ -122,43 +122,41 @@ function data() {
 	}
 }
 
-function parsePass(value, percent) {
+function parsePass(value, percent) { // Run the parsed data for custom rating styles
 	console.warn(value);
 	if (value[0].indexOf('=') !== -1) {
 		if (
-		(value[0][0] === '>' && percent >= value[1]) || 
+		(value[0][0] === '>' && percent >= value[1]) ||
 		(value[0][0] !== '>' && percent >= value[1])
 		) { return true; }
 	} else if (value[1] !== '$') {
 		if (
-		(value[0] === '>' && percent > value[1]) || 
+		(value[0] === '>' && percent > value[1]) ||
 		(value[0] === '<' && percent < value[1])
 		) { return true; }
 	}
 	return false;
 }
 
-port.onMessage.addListener(function(msg) {
-	//console.log(msg);
-	//console.log(msg.items.length + ' --- ' + Object.keys(returns).length);
-	
-	//console.warn(returns);
-	
+port.onMessage.addListener(function(msg) { // Listen for messages from background.js. These messages will contain rating data.
+
 	for (let i = 0; i < msg.items.length; i++) {
-		if (v2.test(returns[msg.items[i].id].html())) { continue; } // CRUDE FIX; not efficient. Doesn't fix the underlying problem, it just obscures it.
-		
+		if (v2.test(returns[msg.items[i].id].html())) { continue; } // Don't bother if rating is already present
+
 		if (msg.items[i].statistics.likeCount !== undefined) {
 			let likes = parseInt(msg.items[i].statistics.likeCount);
 			let dislikes = parseInt(msg.items[i].statistics.dislikeCount);
 			let percent = Math.round(likes/(likes+dislikes)*1000)/10;
-			
+
 			let color = 'gray';
 			let extraStyle = '';
-			
-			if (default_styling) {
-				console.log('%cDEF', 'color:red')
+
+			if (default_styling) { // Default styling: built to be faster
 				if (percent > 95) {
 					color = 'green';
+                    if (percent >= 99) {
+    					extraStyle += 'border: yellow 1px solid';
+    				}
 				} else if (percent > 90) {
 					color = 'lightgreen';
 				} else if (percent > 80) {
@@ -168,12 +166,8 @@ port.onMessage.addListener(function(msg) {
 				} else if (percent >= 0) {
 					color = 'darkred';
 				}
-				
-				if (percent >= 99) {
-					extraStyle += 'border: yellow 1px solid';
-				}
+
 			} else {
-				console.log('%cwed', 'color:pink');
 				for (let i = 0; i < styling.length; i++) {
 					if (styling[i][1] === '$') { continue; }
 					if (parsePass(styling[i], percent)) {
@@ -185,9 +179,9 @@ port.onMessage.addListener(function(msg) {
 					}
 				}
 			}
-			
-			
-			returns[msg.items[i].id].append('<span class="kein_data_rating"> • <span style="color: '+color+';background-color: #353535;border-radius: 2px;padding: 0 1px;'+extraStyle+'">'+percent+'%</span></span>');
+
+
+			returns[msg.items[i].id].append('<span class="YT_ratings_data_rating"> • <span style="color: '+color+';background-color: #353535;border-radius: 2px;padding: 0 1px;'+extraStyle+'">'+percent+'%</span></span>');
 		} else {
 			let color = 'lightblue'
 			let extraStyle = '';
@@ -202,13 +196,12 @@ port.onMessage.addListener(function(msg) {
 					}
 				}
 			}
-			returns[msg.items[i].id].append('<span class="kein_data_rating"> • <span style="color: '+color+';background-color: #353535;border-radius: 2px;padding: 0 1px;'+extraStyle+'">N/A%</span></span>');
+			returns[msg.items[i].id].append('<span class="YT_ratings_data_rating"> • <span style="color: '+color+';background-color: #353535;border-radius: 2px;padding: 0 1px;'+extraStyle+'">N/A%</span></span>');
 		}
 		console.log('%cSetting flag', 'color:green');
 		returns[msg.items[i].id].parent().parent().parent().parent().parent().parent().addClass('yt_ratings_used');
 		delete returns[msg.items[i].id];
 	}
-	activeRequest = false;
 });
 
 
@@ -217,71 +210,29 @@ $(function(){
 		console.log('%cRUN', 'color:blue;');
 		data();
 	}).observe($('body')[0], {attributes: false, childList: true, subtree: true});
-	
-	
-	
+
+
+
 	chrome.storage.local.get(function(storage) {
-				
+
 		default_styling = storage.default_styling!==undefined?storage.default_styling:true;
-		
+
 		auto_ratings = storage.auto_ratings!==undefined?storage.default_styling:true;
-		
+
 		styling = storage.styling!==undefined?storage.styling:[
-			['>=', 0, 'darkred'], 
-			['>', 60, 'red'], 
-			['>', 80, 'yellow'], 
-			['>', 90, 'lightgreen'], 
-			['>', 95, 'green'], 
-			['>=', 99, '&border: yellow 1px solid;'], 
+			['>=', 0, 'darkred'],
+			['>', 60, 'red'],
+			['>', 80, 'yellow'],
+			['>', 90, 'lightgreen'],
+			['>', 95, 'green'],
+			['>=', 99, '&border: yellow 1px solid;'],
 			[undefined, '$', 'lightblue']
 		];
 		console.log(styling);
 		if (storage.autoGrabbing === undefined || storage.autoGrabbing === 'true') {
-			
+
 			setInterval(function(){
-				if (query !== window.location.href) {
-					query = window.location.href;
-					/*
-					$('span.kein_data_rating').each(function(){
-						console.log('%cRemoving...', 'color:blue');
-						$(this).remove();
-					});
-					$('.yt_ratings_used').each(function(){
-						console.log('cleaning...');
-						$(this).removeClass('yt_ratings_used');
-					});
-					backlog = [];
-					returns = {};
-					set = '';
-					/*
-					execution_paused = true;
-					console.log(extension);
-					console.log('Execution paused.');
-					console.log("::::RESET::::\n"+query);
-					$(function(){
-						console.warn(returns);
-						console.warn(backlog);
-						console.warn(set);
-						backlog = [];
-						returns = {};
-						set = '';
-						console.error($('#fuck')[0]);
-						$('span.kein_data_rating').each(function(){
-							console.log('%cRemoving...', 'color:blue');
-							$(this).remove();
-						});
-						
-						$('.yt_ratings_used').each(function(){
-							console.log('cleaning...');
-							$(this).replaceWith('+');
-						});
-						
-						console.log('Execution resuming...');
-						data();
-						execution_paused = false;
-					});
-					*/
-				} else if (backlog.length > 0 && !activeRequest && !execution_paused) {
+				if (backlog.length > 0) {
 					console.log('Fetching:\n'+backlog[0]);
 					console.log(backlog);
 					port.postMessage(backlog[0]);
@@ -291,17 +242,3 @@ $(function(){
 		}
 	});
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
