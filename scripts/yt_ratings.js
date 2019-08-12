@@ -14,7 +14,8 @@ let port = chrome.extension.connect({ name: Math.random()+'' })
 ,styling
 ,default_styling
 ,auto_ratings
-,run = true
+,url_observer_observed = []
+,url_observer_config = {childList: false, characterData: false, attributes: true, subtree: false}
 ;
 function isElementInViewport(el) { // Function courtesy of Stack Overflow
 
@@ -23,7 +24,7 @@ function isElementInViewport(el) { // Function courtesy of Stack Overflow
         el = el[0];
     }
 
-    var rect = el.getBoundingClientRect();
+    let rect = el.getBoundingClientRect();
 
     return (
         rect.top >= 0 &&
@@ -32,6 +33,40 @@ function isElementInViewport(el) { // Function courtesy of Stack Overflow
         rect.right <= (window.innerWidth || document.documentElement.clientWidth) /*or $(window).width() */
     );
 }
+
+function dataSoloLink(subject) {
+	let paren = subject.parent().parent(); // Cache parent
+	paren.addClass('yt_ratings_used');
+	let insert = paren.find('div#metadata-line').find(">:first-child"); // Cache metadata section
+	insert.find('.kein_data_rating').each(function(){
+		$(this).remove();
+	});
+	if (!v2.test(insert.html())) { // Just in case, test if there's already ratings data in metadata section
+		
+		let send = (set.length>0&&(set.match(/,/g)||[]).length+1<50?',':'') + subject.attr('href').substring(9); // Determine comma
+		
+		if (set.substring(set.lastIndexOf(',')+1) !== (v4.test(send)?send.substring(1):send)) {
+			if (v3.test(send)) {
+				send = send.substring(0, send.indexOf('&'));
+			}
+			
+			if ((set.match(/,/g) || []).length + 1 >= 50) {
+				backlog.push(set);
+				set = '';
+			}
+
+			if (returns[v4.test(send)?send.substring(1):send] === undefined) {
+				set += send;
+				returns[v4.test(send)?send.substring(1):send] = insert;
+			}
+		}
+	}
+	if (set.length > 0) {
+		backlog.push(set);
+		set = '';
+	}
+}
+
 function data() {
 	console.log('switch');
 	$('div[id=\'dismissable\']:not(.yt_ratings_used,.ytd-shelf-renderer)').each(function(){ // Iterate over all video sections that do not have values and are not dividers
@@ -42,7 +77,20 @@ function data() {
 			if ($(this).attr('href').indexOf('&start_radio=') !== -1) { // If it's a playlist, mark it and skip
 				return false;
 			}
+			
 			let preParen = $(this); // Cache thumbnail
+			
+			url_observer_observed[url_observer_observed.length] = $(this);
+			
+			new MutationObserver(function(mutations){
+				for (let i = 0; i < mutations.length; i++) {
+					let target = $(mutations[i].target);
+					if (target.attr('id') === 'thumbnail') {
+						dataSoloLink($(mutations[i].target));
+					}
+				}
+			}).observe(this, url_observer_config);
+			
 			let insert = paren.find('div#metadata-line').find(">:first-child"); // Cache metadata section
 			if (!v2.test(insert.html())) { // Just in case, test if there's already ratings data in metadata section
 								
@@ -158,13 +206,20 @@ port.onMessage.addListener(function(msg) {
 		}
 		console.log('%cSetting flag', 'color:green');
 		returns[msg.items[i].id].parent().parent().parent().parent().parent().parent().addClass('yt_ratings_used');
-		//console.warn(returns[msg.items[i].id]);
-		//console.warn(msg.items[i].id);
+		delete returns[msg.items[i].id];
 	}
 	activeRequest = false;
 });
 
+
 $(function(){
+	new MutationObserver(function(mutations){
+		console.log('%cRUN', 'color:blue;');
+		data();
+	}).observe($('body')[0], {attributes: false, childList: true, subtree: true});
+	
+	
+	
 	chrome.storage.local.get(function(storage) {
 				
 		default_styling = storage.default_styling!==undefined?storage.default_styling:true;
@@ -185,40 +240,56 @@ $(function(){
 			
 			setInterval(function(){
 				if (query !== window.location.href) {
+					query = window.location.href;
+					/*
+					$('span.kein_data_rating').each(function(){
+						console.log('%cRemoving...', 'color:blue');
+						$(this).remove();
+					});
+					$('.yt_ratings_used').each(function(){
+						console.log('cleaning...');
+						$(this).removeClass('yt_ratings_used');
+					});
 					backlog = [];
 					returns = {};
 					set = '';
+					/*
+					execution_paused = true;
+					console.log(extension);
 					console.log('Execution paused.');
-					query = window.location.href;
 					console.log("::::RESET::::\n"+query);
 					$(function(){
 						console.warn(returns);
 						console.warn(backlog);
 						console.warn(set);
+						backlog = [];
+						returns = {};
+						set = '';
+						console.error($('#fuck')[0]);
 						$('span.kein_data_rating').each(function(){
 							console.log('%cRemoving...', 'color:blue');
 							$(this).remove();
 						});
+						
 						$('.yt_ratings_used').each(function(){
 							console.log('cleaning...');
-							$(this).removeClass('yt_ratings_used');
+							$(this).replaceWith('+');
 						});
+						
 						console.log('Execution resuming...');
+						data();
+						execution_paused = false;
 					});
+					*/
 				} else if (backlog.length > 0 && !activeRequest && !execution_paused) {
 					console.log('Fetching:\n'+backlog[0]);
 					console.log(backlog);
 					port.postMessage(backlog[0]);
 					backlog.shift();
 				}
-			}, 100);
+			}, 10);
 		}
 	});
-	new MutationObserver(function(mutationsList){
-		console.warn(mutationsList);
-		console.log('%cRUN', 'color:blue;');
-		data();
-	}).observe($('body')[0], {attributes: false, childList: true, subtree: true});
 });
 
 
