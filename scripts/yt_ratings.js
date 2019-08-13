@@ -206,13 +206,6 @@ port.onMessage.addListener(function(msg) { // Listen for messages from backgroun
 
 
 $(function(){
-	new MutationObserver(function(mutations){
-		console.log('%cRUN', 'color:blue;');
-		data();
-	}).observe($('body')[0], {attributes: false, childList: true, subtree: true});
-
-
-
 	chrome.storage.local.get(function(storage) {
 
 		default_styling = storage.default_styling!==undefined?storage.default_styling:true;
@@ -229,8 +222,11 @@ $(function(){
 			[undefined, '$', 'lightblue']
 		];
 		console.log(styling);
-		if (storage.autoGrabbing === undefined || storage.autoGrabbing === 'true') {
-
+		if (storage.auto_ratings === undefined || storage.auto_ratings === true) {
+            new MutationObserver(function(mutations){
+        		console.log('%cRUN', 'color:blue;');
+        		data();
+        	}).observe($('body')[0], {attributes: false, childList: true, subtree: true});
 			setInterval(function(){
 				if (backlog.length > 0) {
 					console.log('Fetching:\n'+backlog[0]);
