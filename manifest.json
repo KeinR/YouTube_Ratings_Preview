@@ -4,11 +4,11 @@
 	"description": "Displays video ratings as a percent while browsing",
 	"version": "1.0",
 	"author": "Kein",
-	
+
 	"icons": {
 		"150": "resources/icon.png"
 	},
-	
+
 	"permissions": [
 		"activeTab",
 		"contextMenus",
@@ -17,23 +17,20 @@
 		"storage",
 		"tabs"
 	],
-	
+
 	"content_scripts": [{
 		"matches": ["https://www.youtube.com/*"],
 		"js": ["scripts/jquery-3.4.1.min.js", "scripts/yt_ratings.js"],
 		"all_frames": false
 	}],
-	
+
 	"background": {
-		"scripts": [ "scripts/jquery-3.4.1.min.js", "scripts/background.js"],
+		"scripts": ["scripts/jquery-3.4.1.min.js", "scripts/background.js"],
 		"persistent": false
 	},
-	
+
 	"page_action": {
 		"default_popup": "popup.html",
 		"default_icon": "resources/icon.png"
-	},
-	
-	"web_accessible_resources": [
-	]
+	}
 }

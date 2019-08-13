@@ -52,7 +52,7 @@ function parseCusomStyle(val) {
             next_p = -1;
         }
         selection += raw[i];
-    }	
+    }
     return product;
 }
 
@@ -62,45 +62,35 @@ $(function(){
 	,colorContent = $('textarea#colorContent')
 	;
 	chrome.storage.local.get(function(storage) {
-		
+
 		if (storage.default_styling === false) {
 			eStyles.checked = true;
 			colorContent.removeAttr('disabled');
 		}
-		
+
 		if (storage.auto_ratings === false) {
 			aRatings.checked = true;
 		}
-		
-		
+
+
 		colorContent.val(storage.styling_raw!==undefined?storage.styling_raw:'>=0:darkred;>60:red;>80:yellow;>90:lightgreen;>95:green;>=99:[border: yellow 1px solid;];$:lightblue;');
-		
-		
+
+
 		console.error(storage);
-		
-		
+
+
 		eStyles.addEventListener('input', function(e){
-			console.log('Event call fired');
-			console.error(eStyles.checked);
-			console.error(typeof colorContent.attr('disabled') !== typeof undefined);
-			console.error(colorContent.attr !== false);
-			console.warn(typeof colorContent);
-			console.log(typeof undefined);
 			if (eStyles.checked && (typeof colorContent.attr('disabled') !== typeof undefined || colorContent.attr !== false)) {
-				console.log('a');
 				colorContent.removeAttr('disabled');
 			} else if (!eStyles.checked && (typeof colorContent.attr('disabled') === typeof undefined || colorContent.attr === false)){
-				console.log('b');
 				colorContent.prop('disabled', true);
-			} else {
-				//console.warn('c');
 			}
 		});
-		
+
 		$('button#submitChanges').click(function(){
 			chrome.storage.local.set({default_styling: !eStyles.checked});
 			chrome.storage.local.set({auto_ratings: !aRatings.checked});
-			
+
 			let compiled = parseCusomStyle(colorContent.val());
 			if (compiled[0] === '@') {
 				$('#parseErrors').attr('style', 'color:red;').html(compiled.substring(1));
@@ -121,25 +111,3 @@ $(function(){
 		});
 	});
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
