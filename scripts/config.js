@@ -101,7 +101,6 @@ $(function(){
 			}
 		});
 		$('#reset').click(function(){
-			$('input#intervalInputConfig').val(500);
 			eStyles.checked = false;
 			if (typeof colorContent.attr('disabled') === typeof undefined || colorContent.attr === false){
 				colorContent.prop('disabled', true);
