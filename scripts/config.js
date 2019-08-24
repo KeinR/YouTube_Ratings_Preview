@@ -23,12 +23,17 @@ function parseCusomStyle(val) {
                 if (!safe) {
                     if (selection.indexOf('&') !== -1) {
                         selection = selection.substr(selection.indexOf('&'));
+                    } else if (section[1] === '*') {
+                        return '@Parsing failed! Error at chars '+debugChar+' - '+(i+1)+', \"*\" must be paired with css (statement '+(product.length+1)+')';
                     } else {
                         selection = selection.replace(/\s/g,'');
                     }
                     section[2] = selection;
                     selection = '';
-					if (((section[0] !== '<' && section[0] !== '>' && section[0] !== '<=' && section[0] !== '>=') || Number.isNaN(section[1])) && section[1] !== '$' && section[1] !== '*') {
+					if (
+                        ((section[0] !== '<' && section[0] !== '>' && section[0] !== '<=' && section[0] !== '>=') || Number.isNaN(section[1])) &&
+                        section[1] !== '$' && section[1] !== '*'
+                    ) {
 						return '@Parsing failed! Error at chars '+debugChar+' - '+(i+1)+' (statement '+(product.length+1)+')';
 					}
 					debugChar = i+1;

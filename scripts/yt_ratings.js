@@ -150,6 +150,7 @@ port.onMessage.addListener(function(msg) { // Listen for messages from backgroun
 
 			let color = 'gray';
 			let extraStyle = '';
+            let superStyle = '';
 
 			if (default_styling) { // Default styling: built to be faster
 				if (percent > 95) {
@@ -170,7 +171,9 @@ port.onMessage.addListener(function(msg) { // Listen for messages from backgroun
 			} else {
 				for (let i = 0; i < styling.length; i++) {
 					if (styling[i][1] === '$') { continue; }
-					if (styling[i][1] === '*' || parsePass(styling[i], percent)) {
+                    if (styling[i][1] === '*') {
+                        superStyle += styling[i][2].substring(1);
+                    } else if (parsePass(styling[i], percent)) {
 						if (styling[i][2][0] !== '&') {
 							color = styling[i][2];
 						} else {
@@ -181,13 +184,16 @@ port.onMessage.addListener(function(msg) { // Listen for messages from backgroun
 			}
 
 
-			returns[msg.items[i].id].append('<span class="YT_ratings_data_rating"> • <span style="color: '+color+';background-color: #353535;border-radius: 2px;padding: 0 1px;'+extraStyle+'">'+percent+'%</span></span>');
+			returns[msg.items[i].id].append('<span class="YT_ratings_data_rating"> • <span style="color: '+color+';background-color: #353535;border-radius: 2px;padding: 0 1px;'+superStyle+extraStyle+'">'+percent+'%</span></span>');
 		} else {
 			let color = 'lightblue'
 			let extraStyle = '';
+            let superStyle = '';
 			if (!default_styling) {
 				for (let i = 0; i < styling.length; i++) {
-					if (styling[i][0] === '$') {
+                    if (styling[i][1] === '*') {
+                        superStyle += styling[i][2].substring(1);
+                    } else if (styling[i][1] === '$') { // 0?
 						if (styling[i][2][0] === '&') {
 							extraStyle = styling[i][2].substring(1);
 						} else {
@@ -196,7 +202,7 @@ port.onMessage.addListener(function(msg) { // Listen for messages from backgroun
 					}
 				}
 			}
-			returns[msg.items[i].id].append('<span class="YT_ratings_data_rating"> • <span style="color: '+color+';background-color: #353535;border-radius: 2px;padding: 0 1px;'+extraStyle+'">N/A%</span></span>');
+			returns[msg.items[i].id].append('<span class="YT_ratings_data_rating"> • <span style="color: '+color+';background-color: #353535;border-radius: 2px;padding: 0 1px;'+superStyle+extraStyle+'">N/A%</span></span>');
 		}
 		console.log('%cSetting flag', 'color:green');
 		returns[msg.items[i].id].parent().parent().parent().parent().parent().parent().addClass('yt_ratings_used');
