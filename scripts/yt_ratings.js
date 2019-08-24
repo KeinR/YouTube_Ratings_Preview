@@ -170,7 +170,7 @@ port.onMessage.addListener(function(msg) { // Listen for messages from backgroun
 			} else {
 				for (let i = 0; i < styling.length; i++) {
 					if (styling[i][1] === '$') { continue; }
-					if (parsePass(styling[i], percent)) {
+					if (styling[i][1] === '*' || parsePass(styling[i], percent)) {
 						if (styling[i][2][0] !== '&') {
 							color = styling[i][2];
 						} else {

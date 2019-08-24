@@ -13,16 +13,22 @@ function parseCusomStyle(val) {
         switch(raw[i]) {
             case ':':
                 if (!safe) {
-                    section[1] = selection==='$'?selection:Number(selection);
+                    selection = selection.replace(/\s/g,''); // Clearing whitespace
+                    section[1] = (selection==='$' || selection==='*')?selection:Number(selection);
                     selection = '';
                     skip = true;
                 }
                 break;
             case ';':
                 if (!safe) {
+                    if (selection.indexOf('&') !== -1) {
+                        selection = selection.substr(selection.indexOf('&'));
+                    } else {
+                        selection = selection.replace(/\s/g,'');
+                    }
                     section[2] = selection;
                     selection = '';
-					if (((section[0] !== '<' && section[0] !== '>' && section[0] !== '<=' && section[0] !== '>=') || Number.isNaN(section[1])) && section[1] !== '$') {
+					if (((section[0] !== '<' && section[0] !== '>' && section[0] !== '<=' && section[0] !== '>=') || Number.isNaN(section[1])) && section[1] !== '$' && section[1] !== '*') {
 						return '@Parsing failed! Error at chars '+debugChar+' - '+(i+1)+' (statement '+(product.length+1)+')';
 					}
 					debugChar = i+1;
@@ -47,7 +53,7 @@ function parseCusomStyle(val) {
         }
         if (skip) { skip = false; continue; }
         if (next_p === 0) {
-            section[0] = selection;
+            section[0] = selection.replace(/\s/g,'');
             selection = '';
             next_p = -1;
         }
